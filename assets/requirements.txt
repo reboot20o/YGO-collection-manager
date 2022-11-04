@@ -1,0 +1,6 @@
+pandas~=1.4.4
+requests~=2.28.1
+future~=0.18.2
+pillow~=9.2.0
+numpy~=1.21.5
+pathlib~=1.0.1
