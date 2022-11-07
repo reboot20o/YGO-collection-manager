@@ -1,4 +1,4 @@
-from create_db import insert_row, select_rows, insert_rows
+from modules.create_db import insert_row, select_rows, insert_rows
 import requests
 import pandas as pd
 import numpy as np
@@ -6,7 +6,7 @@ from collections import Counter
 import json
 
 def clear_tables(con):
-    sql = ("delete from all_cards;", "delete from sets;", "delete from banlist;", "delete from formats;")
+    sql = ("delete from all_cards;", "delete from sets;", "delete from banlist;", "delete from formats;", "delete from tri;")
     cur = con.cursor()
     for state in sql:
         cur.execute(state)

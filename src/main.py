@@ -133,6 +133,8 @@ class App(tk.Tk):
 
         ttk.Button(self.summary_frame, text='Add set to collection',
                    command=self.add_collection).grid(row=2, column=1)
+        ttk.Button(self.summary_frame, text='View set',
+                   command=self.view_set).grid(row=0, column=1)
 
         # Create widgets for right_frame
         # view_frame
@@ -217,15 +219,13 @@ class App(tk.Tk):
         self.make_menu()
         self.make_widgets()
 
-    def add_collection(self):
-        """Add the selected set to collection and update the drop-down to reflect change"""
-
+    def get_set(self):
         var = self.set_combo_var.get()
         pack_code, pack = var.split(' - ')[0:2]
         release = [int(date) for date in var.split(' - ')[2].split()[0][1:-1].split('-')]
         pack_date = datetime.date(release[0], release[1], release[2])
         pack_size = var.split(' - ')[2].split()[1][1:-1]
-        URL = "https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset="+pack.replace(" ", "%20")
+        URL = "https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=" + pack.replace(" ", "%20")
         r = requests.get(URL)
         df = pd.DataFrame(r.json()["data"])
         codes = []
@@ -256,10 +256,7 @@ class App(tk.Tk):
         df = pd.concat([df, setCodes, setRarity], axis=1)
         df = df[["id", "set_code", "name", "rarity"]]
         df = df.sort_values(by='set_code').reset_index(drop=True)
-
         set_list = df.to_numpy()
-        insert_row(self.con, "insert into set_list values (?,?,?,?)", (pack_code, pack, pack_size, pack_date))
-
         cards = []
         for elem in set_list:
             id = elem[0]
@@ -268,9 +265,24 @@ class App(tk.Tk):
             rarity = elem[3]
             cards.append((id, name, pack_code, set_code, rarity, 0))
 
+        return [(pack_code, pack, pack_size, pack_date, None), cards]
+
+    def view_set(self):
+        pack, cards = self.get_set()
+        state = """select a.id, a.name, a.type, a.archetype, a.race, 0 as owned, s.set_rarity_code, s.set_id
+                    from all_cards as a left join sets as s on a.name=s.name
+                    where s.set_code=?
+                    order by s.set_id;"""
+        self.empty_tree()
+        self.add_tree(state, (pack[0],))
+
+    def add_collection(self):
+        """Add the selected set to collection and update the drop-down to reflect change"""
+        pack, cards = self.get_set()
+        insert_row(self.con, "insert into set_list values (?,?,?,?,?)", pack)
         insert_rows(self.con, "insert into set_cards values (?,?,?,?,?,?)", cards)
 
-        showinfo(message=f'The set {pack} has been added to the collection!')
+        showinfo(message=f'The set {pack[1]} has been added to the collection!')
         self.set_list = select_rows(self.con, "select set_code, set_name, release from set_list;")
         self.pop_set_list()
         self.set_obj['values'] = [f'{elem[0]} - {elem[1]} ({elem[2].split("-")[0]})' for elem in self.set_list]
@@ -326,13 +338,12 @@ class App(tk.Tk):
                   'set_rarity': set_rarity, 'own': own}
         state = """insert into set_cards values (:id, :name, :set_code, :set_id, :set_rarity, :own) on conflict(set_id) 
                     do update set owned=excluded.owned;"""
-        answer = False
         if own == og or not own:
             showinfo(message="You didn't submit any changes!")
         else:
-            answer = askyesno(title='Save Changes?', message=state.format(change))
-        if answer:
             insert_row(self.con, state, change)
+            self.empty_tree()
+            self.add_tree("select * from set_cards where set_code=?", (change['set_code'],))
 
     def search(self, event=None):
         """Fuzzy search"""
@@ -344,6 +355,7 @@ class App(tk.Tk):
                     order by owned desc nulls last;"""
         self.empty_tree()
         self.add_tree(state, (var,))
+        print(self.focus_get())
 
     def all_select(self):
         """View every card"""
@@ -486,9 +498,7 @@ class App(tk.Tk):
         rows = select_rows(self.con, state, val)
         self.detached = []
         var = self.check_var.get()
-        own = 0
-        unique = 0
-        in_set = 0
+        own, unique, in_set = 0, 0, 0
         for row in rows:
             try:
                 self.tree.insert('', tk.END, values=(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]),
