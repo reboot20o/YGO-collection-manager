@@ -1,5 +1,7 @@
 ﻿from modules.create_db import create_connection, insert_row, select_rows, select_row, insert_rows
 from modules.db_remove import update_tables
+from modules.location_designation import path
+from modules.display_res import scaled
 import pandas as pd
 import requests
 import datetime
@@ -8,13 +10,14 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
 from tkinter.messagebox import askyesno, showinfo
+from sys import platform
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        db_loc = '../assets/cards.db'
+        db_loc = path('cards.db')
         self.con = create_connection(db_loc)
-        self.set_list = select_rows(self.con, "select set_code, set_name, release from set_list;")
+        self.set_list = select_rows(self.con, "select set_code, set_name, release from set_list order by release asc;")
         self.make_window()
 
     def make_menu(self):
@@ -24,6 +27,7 @@ class App(tk.Tk):
         option_menu = tk.Menu(menubar, tearoff=0)
         option_menu.add_command(label='Re-populate database', command=lambda: update_tables(self.con))
         option_menu.add_command(label='Check for updates', command=self.update_db)
+        option_menu.add_command(label="Reload", command=self.reload)
         menubar.add_cascade(label='Options', menu=option_menu)
 
     def make_frames(self):
@@ -31,9 +35,9 @@ class App(tk.Tk):
         # Create main containers
         self.top_frame = ttk.Frame(self)
         self.btm_frame = ttk.Frame(self)
-        self.left_frame = ttk.Frame(self.btm_frame, width=875)
+        self.left_frame = ttk.Frame(self.btm_frame, width=scaled(875))
         self.summary_frame = ttk.Frame(self.left_frame)
-        self.right_frame = ttk.Frame(self.btm_frame, width=1020)
+        self.right_frame = ttk.Frame(self.btm_frame, width=scaled(1020))
         self.view_frame = ttk.Frame(self.right_frame)
         self.edit_frame = ttk.Frame(self.right_frame)
 
@@ -138,7 +142,7 @@ class App(tk.Tk):
 
         # Create widgets for right_frame
         # view_frame
-        self.img = ImageTk.PhotoImage(file='../assets/images/Yugioh_Card_Back.jpg', name='card_back')
+        self.img = ImageTk.PhotoImage(file=path('images/Yugioh_Card_Back.jpg'), name='card_back')
         self.image_label = ttk.Label(self.view_frame, image='card_back')
         self.image_label.grid(row=1, rowspan=3, column=0, sticky='nw')
 
@@ -212,12 +216,16 @@ class App(tk.Tk):
     def make_window(self):
         # Initialize window
         self.title('Yu-Gi-Oh! Card Database Viewer')
-        self.iconbitmap('../assets/images/yugioh.ico')
-        self.geometry('1920x1080')
+        self.iconbitmap(path('images/yugioh.ico'))
+        self.geometry(f'{scaled(1920)}x{scaled(1080)}')
         self.resizable(True, True)
         self.make_frames()
         self.make_menu()
         self.make_widgets()
+
+    def reload(self):
+        self.destroy()
+        self.__init__()
 
     def get_set(self):
         var = self.set_combo_var.get()
@@ -256,6 +264,12 @@ class App(tk.Tk):
         df = pd.concat([df, setCodes, setRarity], axis=1)
         df = df[["id", "set_code", "name", "rarity"]]
         df = df.sort_values(by='set_code').reset_index(drop=True)
+
+        if df[df.duplicated(subset=['set_code'])].size > 0:
+            for i in df[df.duplicated(subset=['set_code'])].index:
+                temp = df.loc[i, 'set_code']
+                df.loc[i, 'set_code'] = temp[:-3] + str(int(temp[-3:])+1).zfill(3)
+
         set_list = df.to_numpy()
         cards = []
         for elem in set_list:
@@ -269,10 +283,11 @@ class App(tk.Tk):
 
     def view_set(self):
         pack, cards = self.get_set()
-        state = """select a.id, a.name, a.type, a.archetype, a.race, 0 as owned, s.set_rarity_code, s.set_id
-                    from all_cards as a left join sets as s on a.name=s.name
-                    where s.set_code=?
-                    order by s.set_id;"""
+        state = """select a.id, a.name, a.type, a.archetype, a.race, coalesce(ss.owned,0) as owned, s.set_rarity_code, s.set_id
+                            from all_cards as a left join sets as s on a.name=s.name
+                            left outer join set_cards as ss on s.set_id=ss.set_id
+                            where s.set_code=?
+                            order by s.set_id;"""
         self.empty_tree()
         self.add_tree(state, (pack[0],))
 
@@ -280,10 +295,10 @@ class App(tk.Tk):
         """Add the selected set to collection and update the drop-down to reflect change"""
         pack, cards = self.get_set()
         insert_row(self.con, "insert into set_list values (?,?,?,?,?)", pack)
-        insert_rows(self.con, "insert into set_cards values (?,?,?,?,?,?)", cards)
+        insert_rows(self.con, "insert or ignore into set_cards values (?,?,?,?,?,?)", cards)
 
         showinfo(message=f'The set {pack[1]} has been added to the collection!')
-        self.set_list = select_rows(self.con, "select set_code, set_name, release from set_list;")
+        self.set_list = select_rows(self.con, "select set_code, set_name, release from set_list order by release asc;")
         self.pop_set_list()
         self.set_obj['values'] = [f'{elem[0]} - {elem[1]} ({elem[2].split("-")[0]})' for elem in self.set_list]
         self.set_obj['width'] = len(max(self.set_obj['values'], key=len))
@@ -307,19 +322,22 @@ class App(tk.Tk):
     def pop_set_list(self):
         """Populate the set_list table with cards from sets added to collection"""
         check_val = self.misc_var.get()
-        set_codes = [item[0] for item in self.set_list]
-        with open('../assets/set_list.json', 'r') as f:
+        sets = {elem[0]: elem[1] for elem in self.set_list}
+        # set_codes = [item[0] for item in self.set_list]
+        with open(path('set_list.json'), 'r') as f:
             resp = json.loads(f.read())
-        resp[:] = [elem for elem in resp if elem['set_code'] not in set_codes]
+        resp[:] = [elem for elem in resp if (elem['set_code'] not in sets.keys() and elem['set_name'] not in sets.values())]
         check = ['special', 'participation', 'promotion', 'subscription', 'prize']
         if check_val == 1:
             resp[:] = [elem for elem in resp if not any(map(elem['set_name'].lower().__contains__, check))]
         resp = sorted(resp, key=lambda e: (e['set_code'], e['set_name']))
-        self.set_combo['values'] = [f"{elem['set_code']} - {elem['set_name']} - ({elem['tcg_date']}) [{elem['num_of_cards']}]"
-                                    for elem in resp if 'tcg_date' in elem.keys()]
+        vals = [f"{elem['set_code']} - {elem['set_name']} - ({elem['tcg_date']}) [{elem['num_of_cards']}]"
+                for elem in resp if 'tcg_date' in elem.keys()]
+        self.set_combo['values'] = vals
         self.set_combo_var.set(f'{len(resp)}')
         self.set_combo['width'] = len(max(self.set_combo['values'], key=len))
 
+    # Todo: Change number in entry to reflect number owned
     def save_changes(self):
         """Save edited value of owned"""
         name = self.name_var.get()
@@ -343,7 +361,12 @@ class App(tk.Tk):
         else:
             insert_row(self.con, state, change)
             self.empty_tree()
-            self.add_tree("select * from set_cards where set_code=?", (change['set_code'],))
+            ment = """select a.id, a.name, a.type, a.archetype, a.race, s.owned, s.set_rarity, s.set_id
+                    from all_cards as a
+                    left join set_cards as s on a.name=s.name
+                    where s.set_code=?
+                    order by s.set_id;"""
+            self.add_tree(ment, (change['set_code'],))
 
     def search(self, event=None):
         """Fuzzy search"""
@@ -419,13 +442,13 @@ class App(tk.Tk):
         card_id = card_id.lstrip('0')
         size = 260,379
         try:
-            self.im = ImageTk.PhotoImage(file=f'../assets/images/{card_id}.thumbnail')
+            self.im = ImageTk.PhotoImage(file=path(f'images/{card_id}.thumbnail'))
         except FileNotFoundError:
             url = f"https://images.ygoprodeck.com/images/cards/{card_id}.jpg"
             im = Image.open(requests.get(url, stream=True).raw)
-            im.save(f'../assets/images/{card_id}.jpg')
+            im.save(path(f'images/{card_id}.jpg'))
             im.thumbnail(size)
-            im.save(f'../assets/images/{card_id}.thumbnail', 'JPEG')
+            im.save(path(f'images/{card_id}.thumbnail'), 'JPEG')
             self.im = ImageTk.PhotoImage(im)
         self.image_label['image'] = self.im
         self.add_detail(card, sets, bans)
@@ -493,9 +516,12 @@ class App(tk.Tk):
         self.forget_grid()
         self.des.grid_configure(row=2, column=1, rowspan=4, columnspan=4, sticky='nsew', **args)
 
-    def add_tree(self, state, val=()):
+    def add_tree(self, state, val=(), cards=None):
         """Add rows to tree view"""
-        rows = select_rows(self.con, state, val)
+        if cards:
+            rows = cards
+        else:
+            rows = select_rows(self.con, state, val)
         self.detached = []
         var = self.check_var.get()
         own, unique, in_set = 0, 0, 0
@@ -556,7 +582,10 @@ class App(tk.Tk):
 
 def main():
     app = App()
-    app.state('zoomed')
+    if platform == 'win32':
+        app.state('zoomed')
+    else:
+        app.wm_attributes('-zoomed', 1)
     app.mainloop()
 
 main()
