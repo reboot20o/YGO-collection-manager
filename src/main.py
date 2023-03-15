@@ -35,11 +35,11 @@ class App(tk.Tk):
         # Create main containers
         self.top_frame = ttk.Frame(self)
         self.btm_frame = ttk.Frame(self)
-        self.left_frame = ttk.Frame(self.btm_frame, width=scaled(875))
-        # self.left_frame = ttk.Frame(self.btm_frame)
+        # self.left_frame = ttk.Frame(self.btm_frame, width=scaled(975))
+        self.left_frame = ttk.Frame(self.btm_frame)
         self.summary_frame = ttk.Frame(self.left_frame)
-        self.right_frame = ttk.Frame(self.btm_frame, width=scaled(1020))
-        # self.right_frame = ttk.Frame(self.btm_frame)
+        # self.right_frame = ttk.Frame(self.btm_frame, width=scaled(1000))
+        self.right_frame = ttk.Frame(self.btm_frame)
         self.view_frame = ttk.Frame(self.right_frame)
         self.edit_frame = ttk.Frame(self.right_frame)
 
@@ -208,7 +208,7 @@ class App(tk.Tk):
         self.ban_list.grid(row=6, column=0, sticky='nsew', **args)
 
         self.des_var = tk.StringVar(value='Card Text')
-        self.des = ttk.Label(self.view_frame, textvariable=self.des_var, style='Des.TLabel', wraplength=675)
+        self.des = ttk.Label(self.view_frame, textvariable=self.des_var, style='Des.TLabel', wraplength=550)
         self.des.grid(row=3, column=1, columnspan=4, rowspan=4, sticky='nsew', **args)
 
         # edit_frame
@@ -224,7 +224,7 @@ class App(tk.Tk):
         # Initialize window
         self.title('Yu-Gi-Oh! Card Database Viewer')
         # self.iconbitmap(path('images/yugioh.ico'))
-        self.tk.call('tk', 'scaling', 1)
+        self.tk.call('tk', 'scaling', 1.25)
         self.geometry(f'{scaled(1920)}x{scaled(1080)}')
         # self.geometry(f'{1920}x{1080}')
         self.resizable(True, True)
@@ -387,7 +387,6 @@ class App(tk.Tk):
                     order by owned desc nulls last;"""
         self.empty_tree()
         self.add_tree(state, (var,))
-        print(self.focus_get())
 
     def all_select(self):
         """View every card"""
@@ -446,7 +445,7 @@ class App(tk.Tk):
                         from all_cards as a left join set_cards as s on a.name=s.name where a.id=?
                         group by a.name, a.type, a.attribute, a.race, a.archetype, a.level, a.atk, a.def, a.linkval, 
                         a.scale, a.descript;""", (card_id,))
-        sets = select_rows(self.con, "select set_code, set_id, set_rarity_code from sets where id=?", (card_id,))
+        sets = select_rows(self.con, "select s.set_id, s.set_rarity_code, coalesce(sc.owned,0) from sets as s left join set_cards as sc on s.set_id=sc.set_id where s.id=?", (card_id,))
         bans = select_row(self.con, "select tcg, ocg, goat from banlist where id=?", (card_id,))
         card_id = card_id.lstrip('0')
         size = 260,379
@@ -455,7 +454,7 @@ class App(tk.Tk):
         except FileNotFoundError:
             url = f"https://images.ygoprodeck.com/images/cards/{card_id}.jpg"
             im = Image.open(requests.get(url, stream=True).raw)
-            im.save(path(f'images/{card_id}.jpg'))
+            # im.save(path(f'images/{card_id}.jpg'))
             im.thumbnail(size)
             im.save(path(f'images/{card_id}.thumbnail'), 'JPEG')
             self.im = ImageTk.PhotoImage(im)
@@ -474,12 +473,13 @@ class App(tk.Tk):
         self.defe_var.set(f'Def\n{card[7]}')
         self.link_var.set(f'Link Value\n{card[8]}')
         self.scale_var.set(f'Scale\n{card[9]}')
-        self.own_var.set(f'Owned\n{card[10]}')
+        self.own_var.set(f'Total owned\n{card[10]}')
         self.des_var.set(f'Card text\n{card[11]}')
-        setlist = [f"{elem[1]} {elem[2]}" for elem in sets]
+        setlist = [elem[0]+elem[1].rjust(35-len(elem[0]))+str(elem[2]).rjust(40-len(elem[0])-len(elem[1])) for elem in sets]
         self.set_list_var.set(setlist)
         banlist = [f"{key} - {value}" for key, value in zip(['TCG', 'OCG', 'GOAT'], bans[2:]) if value is not None]
         self.ban_var.set(banlist)
+        # self.owned_edit_var.set()
 
         args = {'padx': 5, 'pady': 5, 'ipadx': 0, 'ipady': 0}
         if card[1].endswith('Card'):

@@ -23,7 +23,7 @@ def insert_info(con, df):
     cards = df.to_numpy()
     ints = ['atk', 'def', 'level', 'scale', 'linkval'] # Columns with numeric data
     cols = list(df.columns)
-    remove = ['card_sets', 'card_images', 'card_prices', 'misc_info', 'banlist_info', 'linkmarkers'] # Columns to remove
+    remove = ['card_sets', 'card_images', 'card_prices', 'misc_info', 'banlist_info', 'linkmarkers', 'frameType'] # Columns to remove
     all_cards = [] # List of all cards represented as tuples
     card_sets = [] # Set metadata
     card_formats = []
