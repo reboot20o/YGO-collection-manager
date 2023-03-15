@@ -36,16 +36,23 @@ class App(tk.Tk):
         self.top_frame = ttk.Frame(self)
         self.btm_frame = ttk.Frame(self)
         self.left_frame = ttk.Frame(self.btm_frame, width=scaled(875))
+        # self.left_frame = ttk.Frame(self.btm_frame)
         self.summary_frame = ttk.Frame(self.left_frame)
         self.right_frame = ttk.Frame(self.btm_frame, width=scaled(1020))
+        # self.right_frame = ttk.Frame(self.btm_frame)
         self.view_frame = ttk.Frame(self.right_frame)
         self.edit_frame = ttk.Frame(self.right_frame)
 
         # Layout containers
+        # self.grid_rowconfigure(0, weight=1)
+        # self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
+        # self.top_frame.grid_rowconfigure(0, weight=1)
         self.btm_frame.grid_rowconfigure(0, weight=1)
-        self.left_frame.grid_propagate(0)
-        self.right_frame.grid_propagate(0)
+        # self.btm_frame.grid_columnconfigure(0, weight=1)
+        # self.btm_frame.grid_columnconfigure(1, weight=1)
+        # self.left_frame.grid_propagate(0)
+        # self.right_frame.grid_propagate(0)
 
         self.top_frame.grid(row=0, sticky='ew')
         self.btm_frame.grid(row=1, sticky='nsew')
@@ -216,8 +223,10 @@ class App(tk.Tk):
     def make_window(self):
         # Initialize window
         self.title('Yu-Gi-Oh! Card Database Viewer')
-        self.iconbitmap(path('images/yugioh.ico'))
+        # self.iconbitmap(path('images/yugioh.ico'))
+        self.tk.call('tk', 'scaling', 1)
         self.geometry(f'{scaled(1920)}x{scaled(1080)}')
+        # self.geometry(f'{1920}x{1080}')
         self.resizable(True, True)
         self.make_frames()
         self.make_menu()
