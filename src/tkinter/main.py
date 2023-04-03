@@ -1,4 +1,6 @@
-﻿from modules.create_db import create_connection, insert_row, select_rows, select_row, insert_rows
+﻿import sys
+sys.path.append('..')
+from modules.create_db import create_connection, insert_row, select_rows, select_row, insert_rows
 from modules.db_remove import update_tables
 from modules.location_designation import path
 from modules.display_res import scaled
