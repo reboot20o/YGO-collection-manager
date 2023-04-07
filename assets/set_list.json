@@ -150,10 +150,21 @@
         "tcg_date": "2012-12-05"
     },
     {
+        "set_name": "Adidas collaboration card",
+        "set_code": "ADC1",
+        "num_of_cards": 1
+    },
+    {
         "set_name": "Advanced Demo Deck Extra Pack",
         "set_code": "DEM4",
         "num_of_cards": 10,
         "tcg_date": "2018-01-06"
+    },
+    {
+        "set_name": "Amazing Defenders",
+        "set_code": "AMDE",
+        "num_of_cards": 60,
+        "tcg_date": "2023-01-19"
     },
     {
         "set_name": "Ancient Guardians",
@@ -242,7 +253,7 @@
     {
         "set_name": "Battle of Chaos",
         "set_code": "BACH",
-        "num_of_cards": 101,
+        "num_of_cards": 102,
         "tcg_date": "2022-02-10"
     },
     {
@@ -274,6 +285,12 @@
         "set_code": "BLAR",
         "num_of_cards": 94,
         "tcg_date": "2020-07-23"
+    },
+    {
+        "set_name": "Battles of Legend: Crystal Revenge",
+        "set_code": "BLCR",
+        "num_of_cards": 105,
+        "tcg_date": "2022-11-17"
     },
     {
         "set_name": "Battles of Legend: Hero's Revenge",
@@ -715,7 +732,7 @@
     },
     {
         "set_name": "Dark Beginning 2",
-        "set_code": "DB",
+        "set_code": "DB2",
         "num_of_cards": 264,
         "tcg_date": "2005-07-27"
     },
@@ -1171,7 +1188,7 @@
     },
     {
         "set_name": "Duelist Pack Collection Tin 2011",
-        "set_code": "DPC5",
+        "set_code": "DPCT",
         "num_of_cards": 4,
         "tcg_date": "2011-03-31"
     },
@@ -2288,7 +2305,7 @@
     {
         "set_name": "Magnificent Mavens",
         "set_code": "MAMA",
-        "num_of_cards": 100,
+        "num_of_cards": 112,
         "tcg_date": "2022-11-03"
     },
     {
@@ -2362,6 +2379,12 @@
         "set_code": "MGED",
         "num_of_cards": 151,
         "tcg_date": "2021-11-18"
+    },
+    {
+        "set_name": "Maze of Memories",
+        "set_code": "MAZE",
+        "num_of_cards": 67,
+        "tcg_date": "2023-03-09"
     },
     {
         "set_name": "McDonald's Promotional Cards",
@@ -2564,7 +2587,8 @@
     {
         "set_name": "OTS Tournament Pack 19 (POR)",
         "set_code": "OP19",
-        "num_of_cards": 39
+        "num_of_cards": 39,
+        "tcg_date": "2022-06-15"
     },
     {
         "set_name": "OTS Tournament Pack 2",
@@ -2575,7 +2599,14 @@
     {
         "set_name": "OTS Tournament Pack 20",
         "set_code": "OP20",
-        "num_of_cards": 27
+        "num_of_cards": 27,
+        "tcg_date": "2022-10-20"
+    },
+    {
+        "set_name": "OTS Tournament Pack 21",
+        "set_code": "OP21",
+        "num_of_cards": 26,
+        "tcg_date": "2023-02-09"
     },
     {
         "set_name": "OTS Tournament Pack 3",
@@ -2714,6 +2745,12 @@
         "set_code": "PGD",
         "num_of_cards": 108,
         "tcg_date": "2003-07-18"
+    },
+    {
+        "set_name": "Photon Hypernova",
+        "set_code": "PHHY",
+        "num_of_cards": 101,
+        "tcg_date": "2023-02-09"
     },
     {
         "set_name": "Photon Shockwave",
@@ -3454,6 +3491,24 @@
         "tcg_date": "2020-01-01"
     },
     {
+        "set_name": "Speed Duel GX: Duel Academy Box",
+        "set_code": "SGX1",
+        "num_of_cards": 218,
+        "tcg_date": "2022-03-17"
+    },
+    {
+        "set_name": "Speed Duel GX: Duelists of Shadows",
+        "set_code": "SGX3",
+        "num_of_cards": 21,
+        "tcg_date": "2023-03-30"
+    },
+    {
+        "set_name": "Speed Duel GX: Midterm Paradox",
+        "set_code": "SGX2",
+        "num_of_cards": 110,
+        "tcg_date": "2022-10-06"
+    },
+    {
         "set_name": "Speed Duel Starter Decks: Destiny Masters",
         "set_code": "SS01",
         "num_of_cards": 64,
@@ -3469,7 +3524,7 @@
         "set_name": "Speed Duel Starter Decks: Match of the Millennium",
         "set_code": "SS04",
         "num_of_cards": 67,
-        "tcg_date": "2020-05-15"
+        "tcg_date": "2020-05-14"
     },
     {
         "set_name": "Speed Duel Starter Decks: Twisted Nightmares",
@@ -3500,6 +3555,12 @@
         "set_code": "STP3",
         "num_of_cards": 34,
         "tcg_date": "2022-03-24"
+    },
+    {
+        "set_name": "Speed Duel Tournament Pack 4",
+        "set_code": "STP4",
+        "num_of_cards": 35,
+        "tcg_date": "2022-09-29"
     },
     {
         "set_name": "Speed Duel: Arena of Lost Souls",
@@ -3790,6 +3851,12 @@
         "tcg_date": "2022-04-14"
     },
     {
+        "set_name": "Structure Deck: Beware of Traptrix",
+        "set_code": "SDBT",
+        "num_of_cards": 46,
+        "tcg_date": "2023-02-23"
+    },
+    {
         "set_name": "Structure Deck: Blaze of Destruction",
         "set_code": "SD3",
         "num_of_cards": 31,
@@ -3806,6 +3873,12 @@
         "set_code": "SDCL",
         "num_of_cards": 43,
         "tcg_date": "2017-11-02"
+    },
+    {
+        "set_name": "Structure Deck: Dark World",
+        "set_code": "SR13",
+        "num_of_cards": 45,
+        "tcg_date": "2022-12-01"
     },
     {
         "set_name": "Structure Deck: Deluxe Edition",
@@ -4272,7 +4345,13 @@
     {
         "set_name": "The Lost Art Promotion 2022 K",
         "set_code": "LART",
-        "num_of_cards": 1
+        "num_of_cards": 1,
+        "tcg_date": "2022-10-01"
+    },
+    {
+        "set_name": "The Lost Art Promotion 2023",
+        "set_code": "LART",
+        "num_of_cards": 2
     },
     {
         "set_name": "The Lost Art Promotion A",
@@ -4399,6 +4478,12 @@
         "set_code": "NECH",
         "num_of_cards": 14,
         "tcg_date": "2014-12-04"
+    },
+    {
+        "set_name": "The Pot Collection",
+        "set_code": "TBC1",
+        "num_of_cards": 15,
+        "tcg_date": "2023-09-01"
     },
     {
         "set_name": "The Secret Forces",
@@ -4851,7 +4936,7 @@
         "tcg_date": "2009-11-17"
     },
     {
-        "set_name": "Yu-Gi-Oh! 5D's Tag Force 5 promotional cards",
+        "set_name": "Yu-Gi-Oh! 5D's Tag Force 5 Promotional Cards",
         "set_code": "TF05",
         "num_of_cards": 3,
         "tcg_date": "2010-10-26"
@@ -5071,6 +5156,12 @@
         "set_code": "YCSW",
         "num_of_cards": 1,
         "tcg_date": "2019-08-25"
+    },
+    {
+        "set_name": "Yu-Gi-Oh! Championship Series 2022 prize card",
+        "set_code": "YCSW",
+        "num_of_cards": 1,
+        "tcg_date": "2022-10-16"
     },
     {
         "set_name": "Yu-Gi-Oh! Dark Duel Stories promotional cards",
@@ -5506,7 +5597,7 @@
     },
     {
         "set_name": "Yugi & Kaiba Collector Box",
-        "set_code": "YUCB",
+        "set_code": "KACB",
         "num_of_cards": 2,
         "tcg_date": "2018-03-29"
     },

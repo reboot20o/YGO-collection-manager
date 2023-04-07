@@ -1,11 +1,12 @@
 from modules.create_db import insert_row, select_rows, insert_rows
-from modules.location_designation import path
+from modules.location_designation import asset_path
 import requests
 import pandas as pd
 import numpy as np
 from collections import Counter
 import json
 import datetime
+import time
 
 def clear_tables(con):
     """Method clears contents from tables"""
@@ -57,7 +58,10 @@ def get_set(text):
     if df[df.duplicated(subset=['set_code'])].size > 0:
         for i in df[df.duplicated(subset=['set_code'])].index:
             temp = df.loc[i, 'set_code']
-            df.loc[i, 'set_code'] = temp[:-3] + str(int(temp[-3:])+1).zfill(3)
+            try:
+                df.loc[i, 'set_code'] = temp[:-3] + str(int(temp[-3:])+1).zfill(3)
+            except ValueError:
+                df.loc[i, 'set_code'] = temp[:-2] + str(int(temp[-2:])+1).zfill(2)
 
     set_list = df.to_numpy()
     cards = []
@@ -79,9 +83,9 @@ def set_info(sets):
             if (c[set_code[0]] == 1 or 'EN' in set_code[1] or len(set_code[1]) == 3) and set_code[0] not in codes:
                 items.append(dicts)
                 codes.append(set_code[0])
+        return items
     except IndexError:
         pass
-    return items
 
 def get_info(df):
     df = df.replace({np.nan: None})  # Replaces NaN with None type so SQLite thinks it's Null
@@ -122,7 +126,7 @@ def get_info(df):
             for row in vals:
                 card_sets.append((card['id'], card['name']) + row)
         for elem in formats:
-            card_formats.append((card['name'], elem))
+            card_formats.append((card['id'], card['name'], elem))
 
     return all_cards, card_sets, banlist, card_formats
 
@@ -132,7 +136,7 @@ def insert_info(con, df):
     # Insert data into database
     insert_rows(con, 'insert into all_cards values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)', all_cards)
     insert_rows(con, 'insert into sets values (?,?,?,?,?,?)', card_sets)
-    insert_rows(con, 'insert into formats values (?,?)', card_formats)
+    insert_rows(con, 'insert into formats values (?,?,?)', card_formats)
     insert_rows(con, 'insert into banlist values (?,?,?,?,?)', banlist)
     tri = select_rows(con, "select name, archetype from all_cards;")
     insert_rows(con, "insert into tri values (?,?);", tri)
@@ -142,14 +146,17 @@ def update_tables(con):
     """Method updates the tables. Starts by clearing original contents, then re-populating. Fine for now since tables
     only have ~12,000 rows, but probably bad practice. Should switch to update entries with changes, but limited by
     info provided by api."""
-
+    print('Now populating tables...')
+    tic = time.perf_counter()
     clear_tables(con)
     r = requests.get("https://db.ygoprodeck.com/api/v7/cardinfo.php?misc=yes")
     df = pd.DataFrame(r.json()['data'])
     insert_info(con, df) # Calls method to insert request data into database
     all_sets = requests.get("https://db.ygoprodeck.com/api/v7/cardsets.php").json()
-    with open(path('set_list.json'), 'w') as f:
+    with open(asset_path('set_list.json'), 'w') as f:
         f.write(json.dumps(all_sets, indent=4)) # Update set list JSON file
     r = requests.get("https://db.ygoprodeck.com/api/v7/checkDBVer.php")
     vals = (r.json()[0]['database_version'], r.json()[0]['last_update'].split()[0])
     insert_row(con, "update db_version set version=?, date=?", vals)
+    toc = time.perf_counter()
+    print(f'Done! It took {toc-tic:.4f} seconds.')

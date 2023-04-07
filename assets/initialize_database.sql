@@ -32,6 +32,7 @@ create table if not exists banlist (
     constraint banlist_FK foreign key (name) references all_cards(name));
 
 create table if not exists formats (
+    id text,
     name text,
     format text,
     constraint format_FK foreign key (name) references all_cards(name));

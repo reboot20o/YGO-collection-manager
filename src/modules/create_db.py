@@ -2,20 +2,31 @@ import sqlite3
 from sqlite3 import Error
 from urllib.request import pathname2url
 from modules.location_designation import path
+import time
+
 
 def create_connection(db_file):
     """Method connects to database if it exists or creates it if it doesn't."""
 
     con = None
+    update = False
     try:
+        tic = time.perf_counter()
         dburi = 'file:{}?mode=rw'.format(pathname2url(db_file))
-        con = sqlite3.connect(db_file, uri=True)
+        con = sqlite3.connect(dburi, uri=True)
+        toc = time.perf_counter()
+        print(f'Successfully connected to database. It took {toc - tic:0.4f} seconds.')
     except sqlite3.OperationalError:
         con = sqlite3.connect(db_file)
+        print('Created database. Now creating tables...')
+        tic = time.perf_counter()
         table_initialization(con)
+        toc = time.perf_counter()
+        print(f'Done! It took {toc-tic:0.4f} seconds.')
+        update = True
     except Error as e:
         print(e)
-    return con
+    return con, update
 
 def create_table(con, create_sql):
     """Method executes query create_sql. Intended for table creation."""

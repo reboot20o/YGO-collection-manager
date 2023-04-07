@@ -1,66 +1,34 @@
-# Used to find the path to the file
-from pathlib import Path
+# # Used to find the path to the file
+# from pathlib import Path
 
+import sys
+import os
+
+
+# def path(file):
+#     """Method returns relative path to file in assets folder."""
+#
+#     path_to_db = Path(__file__).parent
+#     relative_path = "../../assets/" + f"{file}"
+#     return str((path_to_db / relative_path).resolve())
+
+def asset_path(file):
+    if getattr(sys, 'frozen', False):
+        if sys.platform.startswith('win'):
+            dir_path = os.path.join(os.environ['APPDATA'], 'YGOCollectionManager/assets')
+        if not os.path.exists(dir_path):
+            os.makedirs(os.path.join(dir_path, 'images'))
+        return os.path.join(dir_path, file)
+    else:
+        return path(file)
 
 def path(file):
-    """Method returns relative path to file in assets folder."""
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    relative_path = f"assets/{file}"
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath("../../")
 
-    path_to_db = Path(__file__).parent
-    relative_path = "../../assets/" + f"{file}"
-    return str((path_to_db / relative_path).resolve())
-
-
-# def file_exist(file_location):
-#     if isfile(file_location):
-#         return True
-
-#     return False
-
-
-# def location_file_text():
-#     path_to_db = Path(__file__).parent
-#     file_location = "assets/db_location.txt"
-#     return str((path_to_db / file_location).resolve())
-
-
-# def location_retrieval():
-#     file_location = location_file_text()
-#     if file_exist(file_location):
-#         with open(file_location, "r") as f:
-#             db_path = f.read()
-#             f.close()
-#             return db_path
-#     else:
-#         path_to_db = input(
-#             "Enter the path to the location where you wish to store Database (press enter to "
-#             "use default location): "
-#         )
-#         if len(path_to_db) != 0:
-#             path_to_db += r"\cards.db"
-#         else:
-#             path_to_db = default_path() + r"\cards.db"
-
-#         with open(file_location, "w") as f:
-#             f.write(path_to_db)
-#             f.close()
-
-#         return path_to_db
-
-
-# def location_gui_retrieval():
-#     file_location = location_file_text()
-#     if file_exist(file_location):
-#         with open(file_location, "r") as f:
-#             db_path = f.read()
-#             f.close()
-#             return db_path
-#     path_to_db = filedialog.askdirectory()
-#     path_to_db = path_to_db.replace("/", "\\") + "\\cards.db"
-#     with open(file_location, "w") as f:
-#         f.write(path_to_db)
-#         f.close()
-#     return path_to_db
-
-
-# if __name__ == "__main__":
-#     print(location_gui_retrieval())
+    return os.path.join(base_path, relative_path)
