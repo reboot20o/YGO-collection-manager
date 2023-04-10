@@ -1,6 +1,9 @@
 import sys
+import os
 if not getattr(sys, 'frozen', False):
-    sys.path.append('..')
+    if os.getcwd().__contains__('qt'):
+        os.chdir('../../')
+    sys.path.append('src')
 
 from modules.create_db import create_connection, select_rows, select_row, insert_row, insert_rows
 from modules.location_designation import path, asset_path
