@@ -4,14 +4,14 @@
 block_cipher = None
 
 added_data = [
-            ('assets\\initialize_database.sql', 'assets'),
-            ('assets\\style.qss', 'assets'),
-            ('assets\\images', 'assets/images')
+            ('assets/initialize_database.sql', 'assets'),
+            ('assets/style.qss', 'assets'),
+            ('assets/images', 'assets/images')
             ]
 
 
 a = Analysis(
-    ['src\\qt\\qt.py'],
+    ['src/qt/qt.py'],
     pathex=['src'],
     binaries=[],
     datas=added_data,

@@ -2,5 +2,4 @@ dev test
 assets/images
 venv
 build
-dist
 __pycache__

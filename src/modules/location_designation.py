@@ -16,6 +16,8 @@ def asset_path(file):
     if getattr(sys, 'frozen', False):
         if sys.platform.startswith('win'):
             dir_path = os.path.join(os.environ['APPDATA'], 'YGOCollectionManager/assets')
+        elif sys.platform.startswith('linux'):
+            dir_path = os.path.join(os.environ['HOME'], 'YGOCollectionManager/assets')
         if not os.path.exists(dir_path):
             os.makedirs(os.path.join(dir_path, 'images'))
         return os.path.join(dir_path, file)
