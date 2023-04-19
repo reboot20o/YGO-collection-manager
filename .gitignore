@@ -3,3 +3,4 @@ assets/images
 venv
 build
 __pycache__
+.idea

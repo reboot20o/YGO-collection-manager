@@ -1,5 +1,8 @@
 ﻿import sys
-sys.path.append('..')
+import os
+if os.getcwd().__contains__('tkinter'):
+    os.chdir('../../')
+sys.path.append('src')
 from modules.create_db import create_connection, insert_row, select_rows, select_row, insert_rows
 from modules.db_remove import update_tables
 from modules.location_designation import path
@@ -18,7 +21,7 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         db_loc = path('cards.db')
-        self.con = create_connection(db_loc)
+        self.con, update = create_connection(db_loc)
         self.set_list = select_rows(self.con, "select set_code, set_name, release from set_list order by release asc;")
         self.make_window()
 
