@@ -4,3 +4,4 @@ venv
 build
 __pycache__
 .idea
+src/modules/db_remove_temp.py
