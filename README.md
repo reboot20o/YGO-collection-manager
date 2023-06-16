@@ -32,7 +32,9 @@ To start the application, run `src/tkinter/main.py`.
 ### Add to collection
 
 To add cards to your collection, you must first select a 
-set to add from the drop-down list located on the bottom left. This list contains every set 
+set to add from the drop-down list located on the bottom left. 
+![All sets](./assets/screenshots/addcollection.jpg)
+This list contains every set 
 printed for the TCG, including special editions and promotional cards. To filter the list, 
 select the option *show only main sets*. After selecting the set to add, click the button 
 *Add set to collection*.
@@ -42,14 +44,24 @@ Selecting that set will populate the table with all the cards from that set.
 Below the table, there is a summary that tells you how many cards from the set you own,
 how many unique cards you own, and how many unique cards are available in the set.
 Selecting a card from the table will populate the detailed card view on the right with the
-associated card data. 
+associated card data.
+![Show card](./assets/screenshots/showCard.jpg)
 
 To add a card to your collection, select the chosen card from the table, then using the spinboxes in the table below the card art,
 you can change the number of owned copies based on set code. Then to confirm the changes, click the button *Submit changes*.
 If the set containing a card you added was not already part of your collection, it will be added.
 
+Using the search bar above the table, you can perform a fuzzy search to find particular cards based on card name.
+![Search](./assets/screenshots/search.jpg)
+You can further restrict your search by using the various filter options from the collapsible menu.
+![Filter](./assets/screenshots/filter.jpg)
+The filters will work in combination, though they may update slowly resulting in no matches.
+Use the *Reset filter* button to reset the filter options.
+
+
 If a set is missing cards or some set codes are incorrect, it may be an issue with data provided by the api.
 First ensure your database is up to date by selecting *update* in the file menu.
+![Update](./assets/screenshots/update.jpg)
 If the issue persists, you can submit an issue, or simply wait and see if the problem fixes itself.
 
 ## Contributing
