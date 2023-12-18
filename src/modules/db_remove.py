@@ -12,20 +12,24 @@ def clear_tables(con):
     """Method clears contents from tables"""
 
     sql = ("delete from all_cards;", "delete from sets;", "delete from banlist;", "delete from formats;",
-           "delete from tri;")
+           "delete from tri;", "delete from all_sets;", "delete from sets_tri;")
     cur = con.cursor()
     for state in sql:
         cur.execute(state)
     con.commit()
 
 def get_set(text):
-    """Method takes as input a text string of the form: set_code - set_name (release_date) [# of cards in set]
+    """Method takes as input a text string of the form: set_code - set_name - (release_date) - [# of cards in set]
     API is queried with given set information
     """
-    pack_code, pack = text.split(' - ')[0:2]
-    release = [int(date) for date in text.split(' - ')[2].split()[0][1:-1].split('-')]
+    data = text.split(' - ')
+    if len(data) > 4:
+        data[1] = '-'.join(data[1:-2])
+        del data[2:-2]
+    pack_code, pack, release_date, size = data
+    release = [int(date) for date in release_date[1:-1].split('-')]
     pack_date = datetime.date(release[0], release[1], release[2])
-    pack_size = text.split(' - ')[2].split()[1][1:-1]
+    pack_size = size[1:-1]
 
     URL = "https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=" + pack.replace(" ", "%20")
     r = requests.get(URL)
@@ -72,10 +76,7 @@ def get_set(text):
     set_list = df.to_numpy()
     cards = []
     for elem in set_list:
-        id = elem[0]
-        set_code = elem[1]
-        name = elem[2]
-        rarity = elem[3]
+        id, set_code, name, rarity = elem
         cards.append((id, name, pack_code, set_code, rarity, 0))
 
     return [(pack_code, pack, pack_size, pack_date, None), cards]
@@ -99,7 +100,7 @@ def get_info(df):
     ints = ['atk', 'def', 'level', 'scale', 'linkval']  # Columns with numeric data
     cols = list(df.columns)
     remove = ['card_sets', 'card_images', 'card_prices', 'misc_info', 'banlist_info', 'linkmarkers',
-              'frameType']  # Columns to remove
+              'frameType', 'pend_desc', 'monster_desc']  # Columns to remove
     all_cards = []  # List of all cards represented as tuples
     card_sets = []  # Set metadata
     card_formats = []
@@ -132,7 +133,7 @@ def get_info(df):
             for row in vals:
                 card_sets.append((card['id'], card['name']) + row)
         for elem in formats:
-            card_formats.append((card['id'], card['name'], elem))
+            card_formats.append((card['name'], elem))
 
     return all_cards, card_sets, banlist, card_formats
 
@@ -202,7 +203,7 @@ def insert_info(con, df):
     # Insert data into database
     insert_rows(con, 'insert into all_cards values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)', all_cards)
     insert_rows(con, 'insert into sets values (?,?,?,?,?,?)', card_sets)
-    insert_rows(con, 'insert into formats values (?,?,?)', card_formats)
+    insert_rows(con, 'insert into formats values (?,?)', card_formats)
     insert_rows(con, 'insert into banlist values (?,?,?,?,?)', banlist)
     tri = select_rows(con, "select name, archetype from all_cards;")
     insert_rows(con, "insert into tri values (?,?);", tri)
@@ -219,6 +220,16 @@ def update_tables(con):
     df = pd.DataFrame(r.json()['data'])
     insert_info(con, df) # Calls method to insert request data into database
     all_sets = requests.get("https://db.ygoprodeck.com/api/v7/cardsets.php").json()
+    rows = []
+    for row in all_sets:
+        if 'tcg_date' not in row.keys():
+            row['tcg_date'] = None
+        if row['set_name'] == 'Dark Beginning 1':
+            row['set_code'] = 'DB1'
+        rows.append((row['set_name'], row['set_code'], row['num_of_cards'], row['tcg_date']))
+    insert_rows(con, "insert into all_sets values (?,?,?,?);", rows)
+    tri = select_rows(con, "select name, code from all_sets;")
+    insert_rows(con, "insert into sets_tri values (?,?)", tri)
     with open(asset_path('set_list.json'), 'w') as f:
         f.write(json.dumps(all_sets, indent=4)) # Update set list JSON file
     r = requests.get("https://db.ygoprodeck.com/api/v7/checkDBVer.php")

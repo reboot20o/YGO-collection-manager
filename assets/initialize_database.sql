@@ -56,4 +56,12 @@ create table if not exists set_cards (
 
 create table if not exists db_version (version text, date text);
 
+create table if not exists all_sets (
+    name text,
+    code text,
+    size int,
+    date text);
+
 create virtual table if not exists tri using fts5(name, archetype, tokenize='trigram');
+
+create virtual table if not exists sets_tri using fts5(name, code, tokenize='trigram');

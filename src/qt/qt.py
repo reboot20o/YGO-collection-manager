@@ -8,166 +8,51 @@ if not getattr(sys, 'frozen', False):
 from modules.create_db import create_connection, select_rows, select_row, insert_row, insert_rows
 from modules.location_designation import path, asset_path
 from modules.db_remove import get_set, update_tables
-from modules.collapse_widget import CollapsibleBox
+from ui import Ui_collector
 
 import requests
 from PIL import Image
-import json
 import datetime
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtGui import QAction, QImage, QPixmap
-from PySide6.QtWidgets import (QApplication, QComboBox, QFrame, QAbstractItemView, QHBoxLayout, QLabel,
-                               QMainWindow, QPushButton, QCheckBox, QVBoxLayout, QWidget, QTableWidget,
-                               QTableWidgetItem, QHeaderView, QGridLayout, QMessageBox, QScrollArea, QLineEdit,
-                               QListWidget, QSpinBox)
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget,
+                               QTableWidgetItem, QMessageBox, QSpinBox)
 
 
-class Widget(QWidget):
+class Widget(QWidget, Ui_collector):
     def __init__(self):
-        QWidget.__init__(self)
-        self.items = 0
-        self.detached = []
-        db_loc = asset_path('cards.db')
-        self.con, update = create_connection(db_loc)
+        super().__init__()
+        self.setupUI()
+
+        self.items = 0  # Index to keep track of number of rows in table
+        self.detached = []  # Initialize list to hold items detached from table
+        db_loc = asset_path('cards.db')  # Get path to database
+        self.con, update = create_connection(db_loc)  # Initialize database
         if update:
-            update_tables(self.con)
+            update_tables(self.con)  # Re-populates database tables if new update available
         self.set_list = select_rows(self.con, "select set_code, set_name, release from set_list order by release asc;")
+        self.pack_list = self.pop_set_list()
 
-        # Top
-        top_layout = QHBoxLayout()
-        filter_layout = QGridLayout()
-
-        content = QWidget()
-        scroll = QScrollArea()
-        scroll.setWidget(content)
-        scroll.setWidgetResizable(True)
-        box = CollapsibleBox("Filter:")
-        self.set_list_combo = QComboBox()
-        self.set_list_combo.setPlaceholderText('')
-        self.search_edit = QLineEdit()
-        self.search_edit.setPlaceholderText('Search')
-        search_btn = QPushButton('Search')
-
-        filter_labels = {label: QLabel(label) for label in ['Type', 'Race', 'Archetype', 'Attribute', 'Level/Rank', 'Link']}
-        self.filter_combo = {label: QComboBox() for label in ['Type', 'Race', 'Archetype', 'Attribute', 'Level', 'Linkval']}
-        for i in range(6):
-            filter_layout.addWidget(filter_labels[list(filter_labels.keys())[i]], i % 3, 2 * (i // 3))
-            filter_layout.addWidget(self.filter_combo[list(self.filter_combo.keys())[i]], i % 3, 2 * (i // 3) + 1)
-        box.setContentLayout(filter_layout)
-
-        reset_btn = QPushButton('Reset filter')
-        self.owned_check = QCheckBox('Owned only')
-        self.all_check = QCheckBox('All cards')
-
-        top_layout.addWidget(self.set_list_combo)
-        top_layout.addWidget(self.search_edit)
-        top_layout.addWidget(search_btn)
-        top_layout.addWidget(box)
-        top_layout.addWidget(reset_btn)
-        top_layout.addWidget(self.owned_check)
-        top_layout.addWidget(self.all_check)
-
-        # Left
-        left_layout = QVBoxLayout()
-        bot_layout = QHBoxLayout()
-        but_layout = QVBoxLayout()
-
-        self.header_labels = ['Id', 'Name', 'Type', 'Archetype', 'Race', 'Owned', 'Rarity', 'Set Code']
-        self.table = QTableWidget()
-        self.table.setColumnCount(8)
-        self.table.setHorizontalHeaderLabels(self.header_labels)
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table.verticalHeader().setVisible(False)
-        self.table.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.table.setSortingEnabled(True)
-
-        self.summary = QLabel('Owned: \t Unique: \t Available:', self)
-        self.pack_list_combo = QComboBox()
-        self.main_sets_check = QCheckBox('Show only main sets', self)
-        self.view_set_btn = QPushButton('View set')
-        self.add_set_btn = QPushButton('Add set to collection')
-
-        bot_layout.addWidget(self.pack_list_combo)
-        bot_layout.addWidget(self.main_sets_check)
-        bot_layout.addLayout(but_layout)
-        but_layout.addWidget(self.view_set_btn)
-        but_layout.addWidget(self.add_set_btn)
-        left_layout.addWidget(self.table)
-        left_layout.addWidget(self.summary)
-        left_layout.addLayout(bot_layout)
-
-        # Right
-        label_layout = QGridLayout()
-        btm_layout = QVBoxLayout()
-        self.tags = ['image', 'description', 'name', 'type', 'attribute', 'race', 'level/rank', 'attack', 'defense',
-                     'archetype', 'link rating', 'scale']
-        self.labels = {tag: QLabel(tag.title(), self) for tag in self.tags}
-        for key in self.tags:
-            self.labels[key].setFrameStyle(QFrame.Panel | QFrame.Sunken)
-            self.labels[key].setLineWidth(2)
-            if key not in ('image', 'name', 'description'):
-                self.labels[key].setFixedSize(200, 80)
-                self.labels[key].setWordWrap(True)
-            elif key == 'description':
-                self.labels[key].setWordWrap(True)
-            elif key == 'name':
-                self.labels[key].setFixedSize(600, 80)
-        self.im = QImage(path(f'images/Yugioh_Card_Back.jpg'))
-        self.labels['image'].setPixmap(QPixmap(self.im))
-
-        self.owned_label = QLabel()
-        self.bans_list = QListWidget()
-        self.edit_owned_btn = QPushButton('Submit Changes')
-        self.cardsets_table = QTableWidget()
-        self.cardsets_table.setColumnCount(3)
-        self.cardsets_table.setHorizontalHeaderLabels(['Sets', 'Rarity', '# Owned'])
-        self.cardsets_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.cardsets_table.verticalHeader().setVisible(False)
-        self.cardsets_table.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.cardsets_table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.cardsets_table.setSortingEnabled(True)
-
-        label_layout.addWidget(self.labels['image'], 0, 0, 4, 1)
-        label_layout.addWidget(self.labels['name'], 0, 1, 1, 3)
-        label_layout.addWidget(self.labels['description'], 4, 1, 1, 3)
-        for i in range(3, len(self.tags)):
-            label_layout.addWidget(self.labels[self.tags[i]], i // 3, (i - 3) % 3 + 1)
-        label_layout.addLayout(btm_layout, 4, 0)
-
-        btm_layout.addWidget(self.owned_label)
-        btm_layout.addWidget(self.cardsets_table)
-        btm_layout.addWidget(self.edit_owned_btn)
-        btm_layout.addWidget(self.bans_list)
-
-        # Main layout
-        main_layout = QVBoxLayout()
-        layout = QHBoxLayout()
-        layout.addLayout(left_layout, 1)
-        layout.addLayout(label_layout, 1)
-        main_layout.addLayout(top_layout)
-        main_layout.addLayout(layout)
-
-        self.setLayout(main_layout)
-
-        self.pop_set_list()
+        self.add_to_packs()
         self.combo_set()
         self.reset_filter()
 
         # Signals and slots
         self.set_list_combo.currentTextChanged.connect(self.set_table)
         self.search_edit.returnPressed.connect(self.search)
-        search_btn.clicked.connect(self.search)
+        self.search_btn.clicked.connect(self.search)
         for key in self.filter_combo:
             self.filter_combo[key].activated.connect(self.set_filter)
-        reset_btn.clicked.connect(self.reset_filter)
+        self.reset_btn.clicked.connect(self.reset_filter)
         self.all_check.toggled.connect(self.select_all)
         self.owned_check.toggled.connect(self.remove_select)
         self.table.itemSelectionChanged.connect(self.select_item)
         self.view_set_btn.clicked.connect(self.view_set)
         self.add_set_btn.clicked.connect(self.add_set)
-        self.main_sets_check.toggled.connect(self.pop_set_list)
+        self.main_sets_check.toggled.connect(self.set_list_filter)
+        self.sort_sets_combo.currentTextChanged.connect(self.set_list_filter)
+        self.sort_direction_combo.currentTextChanged.connect(self.set_list_filter)
         self.edit_owned_btn.clicked.connect(self.edit_owned)
 
     @Slot()
@@ -265,7 +150,7 @@ class Widget(QWidget):
     def select_item(self):
         """Slot for table. Reads selected row from table then populates labels in detail view."""
         self.clear_table(self.cardsets_table)
-        self.bans_list.clear()
+        self.clear_table(self.bans_list)
         row = self.table.currentIndex().row()
         card_id = self.table.item(row, 0).text()
         info = select_row(self.con, """select a.descript, a.name, a.type, a.attribute, a.race, a.level, a.atk, a.def, 
@@ -275,7 +160,12 @@ class Widget(QWidget):
                                     a.linkval, a.scale, a.descript;""", (card_id,))
         sets = select_rows(self.con, """select s.set_id, s.set_rarity_code, coalesce(sc.owned,0) from sets as s 
                                         left join set_cards as sc on s.set_id=sc.set_id where s.id=?""", (card_id,))
-        bans = select_row(self.con, "select tcg, ocg, goat from banlist where id=?", (card_id,))
+        ban_list = select_row(self.con, "select tcg, ocg, goat from banlist where id=?", (card_id,))
+        bans = {key: val for key, val in zip(['TCG', 'OCG', 'GOAT'], ban_list) if val is not None}
+        # print(info)
+        formats = select_rows(self.con, "select format from formats where name=?", (info[1],))
+        format_list = {key[0]: '' for key in formats}
+        format_list.update(bans)
         card_id = card_id.lstrip('0')
         size = 280, 380
         self.im = QImage(asset_path(f'images/{card_id}.thumbnail'))
@@ -289,7 +179,9 @@ class Widget(QWidget):
         self.labels['image'].setPixmap(QPixmap(self.im))
         details = {key: val for key, val in zip(self.tags[1:], info[:-1])}
         for key, val in details.items():
-            self.labels[key].setText(f'{key.title()}:\n{val}')
+            if key == 'description':
+                val = val.replace('\n', '<br>')
+            self.labels[key].setText(f'{key.title()}<br><b style="font-size:14px;">{val}</b>')
         self.owned_label.setText(f'Owned:\n{info[-1]}')
         for i in range(len(sets)):
             self.cardsets_table.insertRow(i)
@@ -299,8 +191,12 @@ class Widget(QWidget):
             self.cardsets_table.cellWidget(i, 2).setMaximum(10000)
             for j in range(2):
                 self.cardsets_table.setItem(i, j, items[j])
-        self.bans_list.addItems(
-            [f"{key} - {value}" for key, value in zip(['TCG', 'OCG', 'GOAT'], bans) if value is not None])
+
+        for i, elem in enumerate(format_list.items()):
+            self.bans_list.insertRow(i)
+            items = [QTableWidgetItem(str(val)) for val in elem]
+            for j in range(2):
+                self.bans_list.setItem(i, j, items[j])
 
     @Slot()
     def view_set(self):
@@ -316,24 +212,22 @@ class Widget(QWidget):
         self.add_to_database(text)
 
     @Slot()
-    def pop_set_list(self):
+    def set_list_filter(self):
         """Slot for main_sets_check. Populates pack_list_combo with sets not in collection."""
         self.pack_list_combo.clear()
-        sets = {elem[0]: elem[1] for elem in self.set_list}
-        with open(asset_path('set_list.json'), 'r') as f:
-            resp = json.loads(f.read())
-        resp[:] = [elem for elem in resp if
-                   (elem['set_code'] not in sets.keys() and elem['set_name'] not in sets.values())]
+        resp = self.pack_list.copy()
         check = ['special', 'participation', 'promotion', 'subscription', 'prize']
+        order = {'Asc': False, 'Desc': True}
+        key = {'Date': lambda e: (e[3], e[1], e[0]),
+               'Set Code': lambda e: (e[1], e[0]),
+               'Number of cards': lambda e: (e[2], e[1], e[0])}
+        sort_key = self.sort_sets_combo.currentText()
+        sort_dir = self.sort_direction_combo.currentText()
         if self.main_sets_check.isChecked():
-            resp[:] = [elem for elem in resp if not any(map(elem['set_name'].lower().__contains__, check))]
-        resp = sorted(resp, key=lambda e: (e['set_code'], e['set_name']))
-        for elem in resp:
-            if 'tcg_date' in elem.keys():
-                self.pack_list_combo.addItem(
-                    f"{elem['set_code']} - {elem['set_name']} - ({elem['tcg_date']}) [{elem['num_of_cards']}]")
-        self.pack_list_combo.setPlaceholderText(str(self.pack_list_combo.count()))
-        self.pack_list_combo.setCurrentIndex(-1)
+            resp[:] = [elem for elem in resp if not any(map(elem[0].lower().__contains__, check))]
+        if sort_key != 'Sort By':
+            resp = sorted(resp, key=key[sort_key], reverse=order[sort_dir])
+        self.add_to_packs(resp)
 
     @Slot()
     def edit_owned(self):
@@ -346,23 +240,28 @@ class Widget(QWidget):
         vals = [self.cardsets_table.cellWidget(row, 2).value() for row in range(count)]
         owned = {name: val for name, val in zip(names, vals)}
         to_add = []
-        with open(asset_path('set_list.json'), 'r') as f:
-            resp = json.loads(f.read())
         for key, val in owned.items():
             if key in list(check.keys()) and val != check[key]:
                 to_add.append((val, key))
                 print(f'The value for {key} changed from {check[key]} to {val}')
             elif key not in list(check.keys()) and val > 0:
                 code = key.split('-')[0]
-                for row in resp:
-                    if 'tcg_date' in row.keys() and row['set_code'] == code:
-                        text = f"{row['set_code']} - {row['set_name']} - ({row['tcg_date']}) [{row['num_of_cards']}]"
+                for row in self.pack_list:
+                    if row[1] == code:
+                        text = f"{row[1]} - {row[0]} - ({row[3]}) - [{row[2]}]"
                         break
                 self.add_to_database(text)
                 to_add.append((val, key))
                 print(f'Set {key} not in database, but owned is {val}')
         insert_rows(self.con, "update set_cards set owned = ? where set_id = ?", to_add)
         self.select_item()
+
+    def pop_set_list(self):
+        sets = {elem[0]: elem[1] for elem in self.set_list}
+        resp = select_rows(self.con, "select * from all_sets where date is not null;")
+        resp[:] = [elem for elem in resp if
+                   (elem[1] not in sets.keys() and elem[0] not in sets.values())]
+        return resp
 
     def add_to_database(self, text):
         """Method adds set and set cards to database."""
@@ -371,7 +270,8 @@ class Widget(QWidget):
         insert_rows(self.con, "insert or ignore into set_cards values (?,?,?,?,?,?)", cards)
 
         self.set_list = select_rows(self.con, "select set_code, set_name, release from set_list order by release asc;")
-        self.pop_set_list()
+        self.pack_list = self.pop_set_list()
+        self.add_to_packs()
         self.combo_set()
 
     def add_to_table(self, state, vals=()):
@@ -396,6 +296,15 @@ class Widget(QWidget):
         self.remove_select(var)
         self.table.setSortingEnabled(True)
         self.summary.setText(f'Owned: {own} \tUnique: {uni} \tAvailable: {ava}')
+
+    def add_to_packs(self, resp=None):
+        if not resp:
+            resp = self.pack_list
+        for elem in resp:
+            self.pack_list_combo.addItem(
+                f"{elem[1]} - {elem[0]} - ({elem[3]}) - [{elem[2]}]")
+        self.pack_list_combo.setPlaceholderText(f"{str(self.pack_list_combo.count())} packs")
+        self.pack_list_combo.setCurrentIndex(-1)
 
     def combo_set(self):
         """Method populates set_list_combo with sets in collection."""
@@ -479,12 +388,13 @@ if __name__ == "__main__":
         toc = time.perf_counter()
         print(f'It took {toc-tic:.4f} seconds to open the window.')
 
-        with open(path('style.qss'), 'r') as f:
+        # with open(path('style.qss'), 'r') as f:
+        with open(path('material.qss'), 'r') as f:
             _style = f.read()
             app.setStyleSheet(_style)
         # Execute application
         sys.exit(app.exec())
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
-        print('An Error has occurred. Let me know what it was.')
+        print(f'An Error has occurred. {e} Let me know what it was.')
         input()

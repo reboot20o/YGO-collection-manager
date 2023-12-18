@@ -3,6 +3,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (QWidget, QToolButton, QScrollArea, QSizePolicy, QFrame,
                                QVBoxLayout, QDockWidget, QApplication, QMainWindow, QLabel)
 
+
 class CollapsibleBox(QWidget):
     def __init__(self, title="", parent=None):
         super(CollapsibleBox, self).__init__(parent)
